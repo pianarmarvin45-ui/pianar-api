@@ -24,12 +24,10 @@ export default async function handler(req, res) {
   ===================================== */
 
   if (req.method === "GET") {
-
     return res.status(200).json({
       status: "ok",
       message: "PIANAR API is running"
     });
-
   }
 
 
@@ -38,20 +36,14 @@ export default async function handler(req, res) {
   ===================================== */
 
   if (req.method !== "POST") {
-
     return res.status(405).json({
       success: false,
       error: "Method not allowed"
     });
-
   }
 
 
   try {
-
-    /* =====================================
-       READ REQUEST
-    ===================================== */
 
     const {
       prompt,
@@ -71,12 +63,10 @@ export default async function handler(req, res) {
       typeof prompt !== "string" ||
       !prompt.trim()
     ) {
-
       return res.status(400).json({
         success: false,
         error: "Prompt is required"
       });
-
     }
 
 
@@ -88,13 +78,11 @@ export default async function handler(req, res) {
       process.env.POLLINATIONS_API_KEY;
 
     if (!API_KEY) {
-
       return res.status(500).json({
         success: false,
         error:
           "POLLINATIONS_API_KEY is not configured"
       });
-
     }
 
 
@@ -124,34 +112,30 @@ export default async function handler(req, res) {
 
     if (
       style &&
-      typeof style === "string"
+      typeof style === "string" &&
+      style.trim()
     ) {
-
       finalPrompt +=
         ", " + style.trim() + " style";
-
     }
 
 
     /* =====================================
-       BUILD IMAGE URL
+       POLLINATIONS URL
     ===================================== */
 
-    const params =
-      new URLSearchParams();
+    const params = new URLSearchParams();
 
     params.set("model", "flux");
     params.set("width", String(width));
     params.set("height", String(height));
     params.set("nologo", "true");
-    params.set("key", API_KEY);
 
     if (quality === "hd") {
       params.set("quality", "hd");
     }
 
-
-    const imageUrl =
+    const pollinationsUrl =
       "https://gen.pollinations.ai/image/" +
       encodeURIComponent(finalPrompt) +
       "?" +
@@ -159,14 +143,65 @@ export default async function handler(req, res) {
 
 
     /* =====================================
+       GENERATE IMAGE SERVER-SIDE
+    ===================================== */
+
+    const imageResponse = await fetch(
+      pollinationsUrl,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${API_KEY}`
+        }
+      }
+    );
+
+
+    if (!imageResponse.ok) {
+
+      const errorText =
+        await imageResponse.text();
+
+      console.error(
+        "Pollinations error:",
+        imageResponse.status,
+        errorText
+      );
+
+      return res.status(imageResponse.status).json({
+        success: false,
+        error: "Pollinations image generation failed",
+        status: imageResponse.status
+      });
+    }
+
+
+    /* =====================================
+       CONVERT IMAGE TO BASE64
+    ===================================== */
+
+    const arrayBuffer =
+      await imageResponse.arrayBuffer();
+
+    const buffer =
+      Buffer.from(arrayBuffer);
+
+    const contentType =
+      imageResponse.headers.get("content-type") ||
+      "image/jpeg";
+
+    const imageUrl =
+      `data:${contentType};base64,${buffer.toString("base64")}`;
+
+
+    /* =====================================
        RESPONSE
     ===================================== */
 
     return res.status(200).json({
-
       success: true,
 
-      imageUrl: imageUrl,
+      imageUrl,
 
       settings: {
         width,
@@ -174,7 +209,6 @@ export default async function handler(req, res) {
         quality,
         count
       }
-
     });
 
 
@@ -189,7 +223,5 @@ export default async function handler(req, res) {
       success: false,
       error: "Image generation failed"
     });
-
   }
-
-  }
+}
