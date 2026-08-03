@@ -136,6 +136,22 @@ export default async function handler(req, res) {
       params.set("quality", "hd");
     }
 
+    /* =====================================
+   REFERENCE IMAGE
+===================================== */
+
+if (
+  referenceImage &&
+  typeof referenceImage === "string"
+) {
+
+  params.set(
+    "image",
+    referenceImage
+  );
+
+}
+
     const pollinationsUrl =
       "https://gen.pollinations.ai/image/" +
       encodeURIComponent(finalPrompt) +
