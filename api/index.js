@@ -45,13 +45,14 @@ export default async function handler(req, res) {
 
   try {
 
-    const {
-      prompt,
-      style = "",
-      size = "1024x1024",
-      quality = "standard",
-      count = 1
-    } = req.body || {};
+   const {
+  prompt,
+  style = "",
+  size = "1024x1024",
+  quality = "standard",
+  count = 1,
+  referenceImage = null
+} = req.body || {}; 
 
 
     /* =====================================
