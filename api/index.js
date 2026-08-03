@@ -137,20 +137,18 @@ export default async function handler(req, res) {
     }
 
     /* =====================================
-   REFERENCE IMAGE
+   REFERENCE IMAGE MODE
 ===================================== */
 
-if (
+const hasReferenceImage =
   referenceImage &&
-  typeof referenceImage === "string"
-) {
+  typeof referenceImage === "string" &&
+  referenceImage.startsWith("data:image/");
 
-  params.set(
-    "image",
-    referenceImage
-  );
-
-}
+    if (hasReferenceImage) {
+  finalPrompt +=
+    ", use the uploaded reference image as visual guidance";
+    }
 
     const pollinationsUrl =
       "https://gen.pollinations.ai/image/" +
@@ -163,15 +161,34 @@ if (
        GENERATE IMAGE SERVER-SIDE
     ===================================== */
 
-    const imageResponse = await fetch(
-      pollinationsUrl,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${API_KEY}`
-        }
+    let imageResponse;
+
+if (hasReferenceImage) {
+  imageResponse = await fetch(
+    pollinationsUrl,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        image: referenceImage,
+        prompt: finalPrompt
+      })
+    }
+  );
+} else {
+  imageResponse = await fetch(
+    pollinationsUrl,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${API_KEY}`
       }
-    );
+    }
+  );
+}
 
 
     if (!imageResponse.ok) {
